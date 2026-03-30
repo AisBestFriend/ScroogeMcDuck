@@ -1,7 +1,7 @@
-import { supabase } from "./supabase";
+import { createServerSupabaseClient } from "./supabase";
 import type { MonthlyRecord, AssetRecord } from "@/types";
 
-const db = () => supabase();
+const db = () => createServerSupabaseClient();
 
 // Monthly Queries
 export async function getMonthlyRecords(userId: string, year?: number): Promise<MonthlyRecord[]> {
