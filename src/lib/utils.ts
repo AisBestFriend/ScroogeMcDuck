@@ -41,3 +41,27 @@ export function generateYearOptions(startYear = 2020): number[] {
 export function generateMonthOptions(): number[] {
   return Array.from({ length: 12 }, (_, i) => i + 1);
 }
+
+export function formatKorean(amount: number | null | undefined): string {
+  if (amount == null || amount === 0) return "0원";
+
+  const eok = Math.floor(amount / 100_000_000);
+  const rem1 = amount % 100_000_000;
+
+  if (eok > 0) {
+    const cheonman = Math.floor(rem1 / 10_000_000);
+    const baekman = Math.floor((rem1 % 10_000_000) / 1_000_000);
+    const parts: string[] = [`${eok}억`];
+    if (cheonman > 0) parts.push(`${cheonman}천`);
+    if (baekman > 0) {
+      parts.push(`${baekman}백만`);
+    } else if (cheonman > 0) {
+      parts[parts.length - 1] += "만";
+    }
+    return parts.join(" ") + "원";
+  }
+
+  const man = Math.floor(amount / 10_000);
+  if (man > 0) return `${man}만원`;
+  return `${amount}원`;
+}

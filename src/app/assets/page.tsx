@@ -1,15 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AssetForm } from "@/components/assets/asset-form";
 import { getAssetRecords } from "@/lib/queries";
-import { generateYearOptions, formatCurrency } from "@/lib/utils";
+import { generateYearOptions, formatCurrency, formatKorean, cn } from "@/lib/utils";
 import { PERSONS, PERSON_LABELS } from "@/types";
 import type { AssetRecord } from "@/types";
 
@@ -30,6 +31,8 @@ interface EditTarget {
   record: AssetRecord | null;
 }
 
+type NumberMode = "number" | "korean";
+
 export default function AssetsPage() {
   const { data: session } = useSession();
   const currentYear = new Date().getFullYear();
@@ -37,6 +40,8 @@ export default function AssetsPage() {
   const [records, setRecords] = useState<AssetRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
+  const [numberModes, setNumberModes] = useState<Record<string, NumberMode>>({});
+  const yearScrollRef = useRef<HTMLDivElement>(null);
 
   const yearOptions = generateYearOptions();
 
@@ -75,6 +80,25 @@ export default function AssetsPage() {
     setEditTarget(null);
   };
 
+  const getMode = (person: string, month: number): NumberMode =>
+    numberModes[`${person}-${month}`] ?? "number";
+
+  const toggleMode = (person: string, month: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const key = `${person}-${month}`;
+    setNumberModes((prev) => ({
+      ...prev,
+      [key]: prev[key] === "korean" ? "number" : "korean",
+    }));
+  };
+
+  const formatValue = (amount: number | null, mode: NumberMode) =>
+    mode === "korean" ? formatKorean(amount) : formatCurrency(amount);
+
+  const scrollYears = (dir: "left" | "right") => {
+    yearScrollRef.current?.scrollBy({ left: dir === "left" ? -200 : 200, behavior: "smooth" });
+  };
+
   return (
     <div className="space-y-6">
       <Header
@@ -82,14 +106,35 @@ export default function AssetsPage() {
         description="월별 자산 스냅샷을 기록하고 성장 추이를 확인하세요"
       />
 
-      {/* Year tabs */}
-      <Tabs value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-        <TabsList>
+      {/* Year scroll */}
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => scrollYears("left")}>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <div
+          ref={yearScrollRef}
+          className="flex gap-1 overflow-x-auto scrollbar-hide"
+          style={{ scrollbarWidth: "none" }}
+        >
           {yearOptions.map((y) => (
-            <TabsTrigger key={y} value={String(y)}>{y}년</TabsTrigger>
+            <button
+              key={y}
+              onClick={() => setSelectedYear(y)}
+              className={cn(
+                "shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                selectedYear === y
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              )}
+            >
+              {y}년
+            </button>
           ))}
-        </TabsList>
-      </Tabs>
+        </div>
+        <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => scrollYears("right")}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
 
       {/* Person tabs */}
       <Tabs defaultValue={PERSONS[0]}>
@@ -108,6 +153,7 @@ export default function AssetsPage() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {MONTHS.map((month) => {
                   const r = getRecord(person, month);
+                  const mode = getMode(person, month);
                   return (
                     <Card
                       key={month}
@@ -115,10 +161,30 @@ export default function AssetsPage() {
                       onClick={() => handleCardClick(person, month)}
                     >
                       <CardHeader className="px-4 pb-2 pt-3">
-                        <CardTitle className="flex items-center justify-between text-sm font-semibold">
-                          <span>{month}월</span>
-                          {!r && <Plus className="h-3 w-3 text-muted-foreground" />}
-                        </CardTitle>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="text-xs text-muted-foreground">
+                              {PERSON_LABELS[person]}
+                            </div>
+                            <div className="text-sm font-semibold">{month}월</div>
+                          </div>
+                          {r ? (
+                            <button
+                              onClick={(e) => toggleMode(person, month, e)}
+                              className="flex items-center gap-0.5 rounded border border-border px-1.5 py-0.5 text-xs transition-colors hover:bg-muted"
+                            >
+                              <span className={mode === "number" ? "font-bold" : "text-muted-foreground"}>
+                                123
+                              </span>
+                              <span className="text-muted-foreground mx-0.5">|</span>
+                              <span className={mode === "korean" ? "font-bold" : "text-muted-foreground"}>
+                                한글
+                              </span>
+                            </button>
+                          ) : (
+                            <Plus className="h-3 w-3 text-muted-foreground mt-1" />
+                          )}
+                        </div>
                       </CardHeader>
                       <CardContent className="px-4 pb-3">
                         {r ? (
@@ -126,12 +192,12 @@ export default function AssetsPage() {
                             {CARD_FIELDS.map(({ key, label }) => (
                               <div key={key} className="flex justify-between text-xs">
                                 <span className="text-muted-foreground">{label}</span>
-                                <span>{formatCurrency(r[key] as number | null)}</span>
+                                <span>{formatValue(r[key] as number | null, mode)}</span>
                               </div>
                             ))}
                             <div className="mt-2 border-t border-border pt-2 flex justify-between text-xs font-bold">
                               <span>합계</span>
-                              <span className="text-yellow-500">{formatCurrency(r.total)}</span>
+                              <span className="text-yellow-500">{formatValue(r.total, mode)}</span>
                             </div>
                           </div>
                         ) : (
