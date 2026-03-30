@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MonthlyForm } from "@/components/monthly/monthly-form";
 import { formatCurrency, generateYearOptions, getCurrentYearMonth } from "@/lib/utils";
+import { BlurOverlay } from "@/components/blur-overlay";
 import type { MonthlyRecord } from "@/types";
 
 const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -93,7 +94,8 @@ export default function MonthlyPage() {
 
           {yearOptions.map((year) => (
             <TabsContent key={year} value={String(year)} className="mt-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              <BlurOverlay>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {MONTHS.map((month) => {
                   const rec = getRecord(year, month);
                   const isCurrentMonth = year === currentYear && month === currentMonth;
@@ -157,6 +159,7 @@ export default function MonthlyPage() {
                   );
                 })}
               </div>
+          </BlurOverlay>
             </TabsContent>
           ))}
         </Tabs>

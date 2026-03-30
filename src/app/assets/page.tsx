@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AssetForm } from "@/components/assets/asset-form";
 import { generateYearOptions, formatCurrency, formatKorean, cn } from "@/lib/utils";
+import { BlurOverlay } from "@/components/blur-overlay";
 import { PERSONS, PERSON_LABELS } from "@/types";
 import type { AssetRecord } from "@/types";
 
@@ -150,6 +151,7 @@ export default function AssetsPage() {
                 로딩 중...
               </div>
             ) : (
+              <BlurOverlay>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {MONTHS.map((month) => {
                   const r = getRecord(person, month);
@@ -208,6 +210,7 @@ export default function AssetsPage() {
                   );
                 })}
               </div>
+              </BlurOverlay>
             )}
           </TabsContent>
         ))}

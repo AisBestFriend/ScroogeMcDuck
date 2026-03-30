@@ -19,6 +19,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { cn, formatCurrency, generateYearOptions, getCurrentYearMonth } from "@/lib/utils";
+import { BlurOverlay } from "@/components/blur-overlay";
 import type { MonthlyRecord } from "@/types";
 
 type ViewMode = "monthly" | "yearly";
@@ -282,22 +283,24 @@ export default function DashboardPage() {
       {!loading && (
         <>
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {cardDefs.map(({ title, icon: Icon, iconClass, current, prev }) => (
-              <Card key={title}>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {title}
-                  </CardTitle>
-                  <Icon className={cn("h-5 w-5", iconClass)} />
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">{formatCurrency(current)}</p>
-                  <DeltaBadge current={current} prev={prev} label={comparisonLabel} />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <BlurOverlay>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {cardDefs.map(({ title, icon: Icon, iconClass, current, prev }) => (
+                <Card key={title}>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      {title}
+                    </CardTitle>
+                    <Icon className={cn("h-5 w-5", iconClass)} />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold">{formatCurrency(current)}</p>
+                    <DeltaBadge current={current} prev={prev} label={comparisonLabel} />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </BlurOverlay>
 
           {/* Chart */}
           <Card>

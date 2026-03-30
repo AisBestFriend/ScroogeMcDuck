@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { signIn, signOut } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import { Sun, Moon, Loader2 } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -11,12 +11,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { getSupabaseClient } from "@/lib/supabase";
+import { useBlurContext } from "@/contexts/blur-context";
+
+const BLUR_OPTIONS = [
+  { label: "끄기", value: 0 },
+  { label: "1분", value: 60_000 },
+  { label: "3분 (기본)", value: 180_000 },
+  { label: "5분", value: 300_000 },
+  { label: "10분", value: 600_000 },
+];
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const { blurTimeout, setBlurTimeout } = useBlurContext();
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -75,8 +86,14 @@ export default function SettingsPage() {
   const handleGoogleLink = async () => {
     setLinkingGoogle(true);
     try {
-      await signIn("google", { redirect: false });
-      setGoogleLinked(true);
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.auth.linkIdentity({ provider: "google" });
+      if (error) {
+        toast({ title: "연동 실패", description: error.message, variant: "destructive" });
+      } else {
+        setGoogleLinked(true);
+        toast({ title: "Google 계정 연동 완료" });
+      }
     } finally {
       setLinkingGoogle(false);
     }
@@ -115,6 +132,27 @@ export default function SettingsPage() {
               <Moon className="h-4 w-4" />
               다크
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>자동 블러</CardTitle>
+          <CardDescription>일정 시간 비활성 시 숫자를 자동으로 가립니다</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {BLUR_OPTIONS.map(({ label, value }) => (
+              <Button
+                key={value}
+                variant={blurTimeout === value ? "default" : "outline"}
+                size="sm"
+                onClick={() => setBlurTimeout(value)}
+              >
+                {label}
+              </Button>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -176,7 +214,7 @@ export default function SettingsPage() {
             </div>
             {googleLinked ? (
               <span className="rounded-md bg-muted px-3 py-1.5 text-sm text-muted-foreground">
-                연동됨 (google)
+                Google 연동됨
               </span>
             ) : (
               <Button variant="outline" onClick={handleGoogleLink} disabled={linkingGoogle}>
