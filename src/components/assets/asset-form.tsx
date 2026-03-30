@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { upsertAssetRecord } from "@/lib/queries";
 import type { AssetRecord } from "@/types";
 import { PERSON_LABELS } from "@/types";
 
@@ -85,23 +84,32 @@ export function AssetForm({ userId, year, month, person, existing, onSaved }: As
   const onSubmit = async (data: AssetFormValues) => {
     setSaving(true);
     try {
-      const record = await upsertAssetRecord(userId, {
-        year,
-        month,
-        person,
-        snapshot_date: data.snapshot_date || null,
-        cash: parseAmount(data.cash),
-        investment: parseAmount(data.investment),
-        realized_profit: parseAmount(data.realized_profit),
-        dividend: parseAmount(data.dividend),
-        savings_deposit: parseAmount(data.savings_deposit),
-        bonds: parseAmount(data.bonds),
-        crypto_gold: parseAmount(data.crypto_gold),
-        house_deposit: parseAmount(data.house_deposit),
-        pension: parseAmount(data.pension),
-        apt_payment: parseAmount(data.apt_payment),
-        total,
+      const res = await fetch("/api/assets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          year,
+          month,
+          person,
+          snapshot_date: data.snapshot_date || null,
+          cash: parseAmount(data.cash),
+          investment: parseAmount(data.investment),
+          realized_profit: parseAmount(data.realized_profit),
+          dividend: parseAmount(data.dividend),
+          savings_deposit: parseAmount(data.savings_deposit),
+          bonds: parseAmount(data.bonds),
+          crypto_gold: parseAmount(data.crypto_gold),
+          house_deposit: parseAmount(data.house_deposit),
+          pension: parseAmount(data.pension),
+          apt_payment: parseAmount(data.apt_payment),
+          total,
+        }),
       });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "저장 실패");
+      }
+      const record = await res.json();
       toast({ title: "저장 완료", description: `${year}년 ${month}월 ${PERSON_LABELS[person] ?? person} 자산이 저장되었습니다.` });
       onSaved(record);
     } catch (e) {

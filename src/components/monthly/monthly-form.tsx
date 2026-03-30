@@ -11,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { upsertMonthlyRecord } from "@/lib/queries";
 import type { MonthlyRecord } from "@/types";
 
 const schema = z.object({
@@ -94,23 +93,32 @@ export function MonthlyForm({ userId, year, month, existing, onSaved }: MonthlyF
   const onSubmit = async (data: FormValues) => {
     setSaving(true);
     try {
-      const record = await upsertMonthlyRecord(userId, {
-        year,
-        month,
-        changyoung_income: parseAmount(data.changyoung_income),
-        yeonju_income: parseAmount(data.yeonju_income),
-        extra_income: parseAmount(data.extra_income),
-        total_income: totalIncome || null,
-        income_memo: data.income_memo || null,
-        changyoung_expense: parseAmount(data.changyoung_expense),
-        yeonju_expense: parseAmount(data.yeonju_expense),
-        bucheonpay: parseAmount(data.bucheonpay),
-        common_expense: parseAmount(data.common_expense),
-        gift_condolence: parseAmount(data.gift_condolence),
-        total_expense: totalExpense || null,
-        expense_memo: data.expense_memo || null,
-        savings: savings || null,
+      const res = await fetch("/api/monthly", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          year,
+          month,
+          changyoung_income: parseAmount(data.changyoung_income),
+          yeonju_income: parseAmount(data.yeonju_income),
+          extra_income: parseAmount(data.extra_income),
+          total_income: totalIncome || null,
+          income_memo: data.income_memo || null,
+          changyoung_expense: parseAmount(data.changyoung_expense),
+          yeonju_expense: parseAmount(data.yeonju_expense),
+          bucheonpay: parseAmount(data.bucheonpay),
+          common_expense: parseAmount(data.common_expense),
+          gift_condolence: parseAmount(data.gift_condolence),
+          total_expense: totalExpense || null,
+          expense_memo: data.expense_memo || null,
+          savings: savings || null,
+        }),
       });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "저장 실패");
+      }
+      const record = await res.json();
       toast({ title: "저장 완료", description: `${year}년 ${month}월 데이터가 저장되었습니다.` });
       onSaved(record);
     } catch (e) {
