@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AssetForm } from "@/components/assets/asset-form";
-import { getAssetRecords } from "@/lib/queries";
 import { generateYearOptions, formatCurrency, formatKorean, cn } from "@/lib/utils";
 import { PERSONS, PERSON_LABELS } from "@/types";
 import type { AssetRecord } from "@/types";
@@ -49,7 +48,8 @@ export default function AssetsPage() {
     if (!session?.user?.id) return;
     setLoading(true);
     try {
-      const data = await getAssetRecords(session.user.id, selectedYear);
+      const res = await fetch(`/api/assets?year=${selectedYear}`);
+      const data = await res.json();
       setRecords(data);
     } finally {
       setLoading(false);

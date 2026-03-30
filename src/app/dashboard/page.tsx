@@ -18,7 +18,6 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { getMonthlyRecords } from "@/lib/queries";
 import { cn, formatCurrency, generateYearOptions, getCurrentYearMonth } from "@/lib/utils";
 import type { MonthlyRecord } from "@/types";
 
@@ -100,7 +99,8 @@ export default function DashboardPage() {
     setLoading(true);
     try {
       if (viewMode === "monthly") {
-        const data = await getMonthlyRecords(session.user.id, selectedYear);
+        const res = await fetch(`/api/monthly?year=${selectedYear}`);
+        const data = await res.json();
         setMonthlyData(data);
       } else {
         const res = await fetch("/api/monthly?mode=yearly");

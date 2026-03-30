@@ -9,7 +9,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MonthlyForm } from "@/components/monthly/monthly-form";
-import { getMonthlyRecords } from "@/lib/queries";
 import { formatCurrency, generateYearOptions, getCurrentYearMonth } from "@/lib/utils";
 import type { MonthlyRecord } from "@/types";
 
@@ -31,7 +30,8 @@ export default function MonthlyPage() {
     if (!session?.user?.id) return;
     setLoading(true);
     try {
-      const data = await getMonthlyRecords(session.user.id);
+      const res = await fetch("/api/monthly");
+      const data = await res.json();
       setRecords(data);
     } finally {
       setLoading(false);
