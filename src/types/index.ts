@@ -84,6 +84,6 @@ export const PERSONS = ["changyoung", "yeonju"] as const;
 export type Person = (typeof PERSONS)[number];
 
 export const PERSON_LABELS: Record<string, string> = {
-  changyoung: "창영",
+  changyoung: "찬영",
   yeonju: "연주",
 };

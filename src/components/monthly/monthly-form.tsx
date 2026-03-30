@@ -132,7 +132,7 @@ export function MonthlyForm({ userId, year, month, existing, onSaved }: MonthlyF
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>창영 수입 (원)</Label>
+              <Label>찬영 수입 (원)</Label>
               <Input {...register("changyoung_income")} placeholder="0" type="number" min={0} />
             </div>
             <div className="space-y-2">
@@ -165,7 +165,7 @@ export function MonthlyForm({ userId, year, month, existing, onSaved }: MonthlyF
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>창영 지출 (원)</Label>
+              <Label>찬영 지출 (원)</Label>
               <Input {...register("changyoung_expense")} placeholder="0" type="number" min={0} />
             </div>
             <div className="space-y-2">
