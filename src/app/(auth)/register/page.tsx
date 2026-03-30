@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Coins, Loader2 } from "lucide-react";
@@ -31,8 +32,14 @@ export default function RegisterPage() {
       if (error) {
         toast({ title: "회원가입 실패", description: error.message, variant: "destructive" });
       } else {
-        toast({ title: "회원가입 완료", description: "이메일을 확인하여 계정을 활성화하세요." });
-        router.push("/login");
+        const result = await signIn("credentials", { email, password, redirect: false });
+        if (result?.error) {
+          toast({ title: "회원가입 완료", description: "이메일을 확인하여 계정을 활성화하세요." });
+          router.push("/login");
+        } else {
+          router.push("/dashboard");
+          router.refresh();
+        }
       }
     } finally {
       setLoading(false);
