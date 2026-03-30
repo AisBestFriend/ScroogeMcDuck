@@ -40,17 +40,35 @@ export async function upsertMonthlyRecord(
   userId: string,
   record: Partial<MonthlyRecord>
 ): Promise<MonthlyRecord> {
-  const { data, error } = await db()
+  // 기존 레코드 확인
+  const { data: existing } = await db()
     .from("monthly")
-    .upsert(
-      { ...record, user_id: userId, updated_at: new Date().toISOString() },
-      { onConflict: "user_id,year,month" }
-    )
-    .select()
+    .select("id")
+    .eq("user_id", userId)
+    .eq("year", record.year!)
+    .eq("month", record.month!)
     .single();
 
-  if (error) throw error;
-  return data as MonthlyRecord;
+  if (existing?.id) {
+    // 업데이트
+    const { data, error } = await db()
+      .from("monthly")
+      .update({ ...record, user_id: userId, updated_at: new Date().toISOString() })
+      .eq("id", existing.id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as MonthlyRecord;
+  } else {
+    // 신규 삽입
+    const { data, error } = await db()
+      .from("monthly")
+      .insert({ ...record, user_id: userId })
+      .select()
+      .single();
+    if (error) throw error;
+    return data as MonthlyRecord;
+  }
 }
 
 export async function deleteMonthlyRecord(userId: string, id: string): Promise<void> {
@@ -88,17 +106,33 @@ export async function upsertAssetRecord(
   userId: string,
   record: Partial<AssetRecord>
 ): Promise<AssetRecord> {
-  const { data, error } = await db()
+  const { data: existing } = await db()
     .from("assets")
-    .upsert(
-      { ...record, user_id: userId },
-      { onConflict: "user_id,year,month,person" }
-    )
-    .select()
+    .select("id")
+    .eq("user_id", userId)
+    .eq("year", record.year!)
+    .eq("month", record.month!)
+    .eq("person", record.person!)
     .single();
 
-  if (error) throw error;
-  return data as AssetRecord;
+  if (existing?.id) {
+    const { data, error } = await db()
+      .from("assets")
+      .update({ ...record, user_id: userId })
+      .eq("id", existing.id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as AssetRecord;
+  } else {
+    const { data, error } = await db()
+      .from("assets")
+      .insert({ ...record, user_id: userId })
+      .select()
+      .single();
+    if (error) throw error;
+    return data as AssetRecord;
+  }
 }
 
 export async function deleteAssetRecord(userId: string, id: string): Promise<void> {
