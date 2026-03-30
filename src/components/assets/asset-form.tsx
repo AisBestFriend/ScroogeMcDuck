@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import type { AssetRecord } from "@/types";
-import { PERSON_LABELS } from "@/types";
+import { useMembers } from "@/contexts/members-context";
 
 interface AssetFormValues {
   snapshot_date: string;
@@ -54,7 +54,14 @@ interface AssetFormProps {
 
 export function AssetForm({ year, month, person, existing, onSaved, onClose }: AssetFormProps) {
   const { toast } = useToast();
+  const { member1, member2 } = useMembers();
   const [saving, setSaving] = useState(false);
+
+  const personLabel = (p: string) => {
+    if (p === "changyoung") return member1;
+    if (p === "yeonju") return member2;
+    return p;
+  };
 
   const toDefaults = (r: AssetRecord | null): AssetFormValues => ({
     snapshot_date: r?.snapshot_date ?? "",
@@ -110,7 +117,7 @@ export function AssetForm({ year, month, person, existing, onSaved, onClose }: A
         throw new Error(err.error || "저장 실패");
       }
       const record = await res.json();
-      toast({ title: "저장 완료", description: `${year}년 ${month}월 ${PERSON_LABELS[person] ?? person} 자산이 저장되었습니다.` });
+      toast({ title: "저장 완료", description: `${year}년 ${month}월 ${personLabel(person)} 자산이 저장되었습니다.` });
       onSaved(record);
     } catch (e) {
       toast({ title: "저장 실패", description: (e as Error).message, variant: "destructive" });

@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { getSupabaseClient } from "@/lib/supabase";
 import { useBlurContext } from "@/contexts/blur-context";
+import { useMembers } from "@/contexts/members-context";
 
 const BLUR_OPTIONS = [
   { label: "끄기", value: 0 },
@@ -28,6 +29,11 @@ export default function SettingsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { blurTimeout, setBlurTimeout } = useBlurContext();
+  const { member1, member2, setMember1, setMember2 } = useMembers();
+
+  // Members edit state
+  const [editMember1, setEditMember1] = useState(member1);
+  const [editMember2, setEditMember2] = useState(member2);
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -39,6 +45,11 @@ export default function SettingsPage() {
   const [googleLinked, setGoogleLinked] = useState(false);
   const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+
+  useEffect(() => {
+    setEditMember1(member1);
+    setEditMember2(member2);
+  }, [member1, member2]);
 
   useEffect(() => {
     setMounted(true);
@@ -108,6 +119,45 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <Header title="설정" description="앱 환경 설정을 관리하세요" />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>구성원 설정</CardTitle>
+          <CardDescription>가계부에 표시될 구성원 이름을 설정하세요</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="member1">구성원1 이름</Label>
+              <Input
+                id="member1"
+                value={editMember1}
+                onChange={(e) => setEditMember1(e.target.value)}
+                placeholder="구성원1"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="member2">구성원2 이름</Label>
+              <Input
+                id="member2"
+                value={editMember2}
+                onChange={(e) => setEditMember2(e.target.value)}
+                placeholder="구성원2"
+              />
+            </div>
+          </div>
+          <Button
+            className="mt-4"
+            onClick={() => {
+              setMember1(editMember1.trim() || "찬영");
+              setMember2(editMember2.trim() || "연주");
+              toast({ title: "구성원 이름이 저장되었습니다" });
+            }}
+          >
+            저장
+          </Button>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AssetForm } from "@/components/assets/asset-form";
 import { generateYearOptions, formatCurrency, formatKorean, cn } from "@/lib/utils";
 import { BlurOverlay } from "@/components/blur-overlay";
-import { PERSONS, PERSON_LABELS } from "@/types";
+import { PERSONS } from "@/types";
+import { useMembers } from "@/contexts/members-context";
 import type { AssetRecord } from "@/types";
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -35,6 +36,7 @@ type NumberMode = "number" | "korean";
 
 export default function AssetsPage() {
   const { data: session } = useSession();
+  const { member1, member2 } = useMembers();
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [records, setRecords] = useState<AssetRecord[]>([]);
@@ -63,6 +65,25 @@ export default function AssetsPage() {
 
   const getRecord = (person: string, month: number) =>
     records.find((r) => r.person === person && r.month === month) ?? null;
+
+  const getMergedRecord = (month: number): Partial<AssetRecord> | null => {
+    const r1 = getRecord("changyoung", month);
+    const r2 = getRecord("yeonju", month);
+    if (!r1 && !r2) return null;
+    const sum = (a: number | null | undefined, b: number | null | undefined): number | null => {
+      if (a == null && b == null) return null;
+      return (a ?? 0) + (b ?? 0);
+    };
+    return {
+      cash: sum(r1?.cash, r2?.cash),
+      investment: sum(r1?.investment, r2?.investment),
+      savings_deposit: sum(r1?.savings_deposit, r2?.savings_deposit),
+      pension: sum(r1?.pension, r2?.pension),
+      house_deposit: sum(r1?.house_deposit, r2?.house_deposit),
+      apt_payment: sum(r1?.apt_payment, r2?.apt_payment),
+      total: sum(r1?.total, r2?.total),
+    };
+  };
 
   const handleCardClick = (person: string, month: number) => {
     setEditTarget({ month, person, record: getRecord(person, month) });
@@ -93,11 +114,17 @@ export default function AssetsPage() {
     }));
   };
 
-  const formatValue = (amount: number | null, mode: NumberMode) =>
-    mode === "korean" ? formatKorean(amount) : formatCurrency(amount);
+  const formatValue = (amount: number | null | undefined, mode: NumberMode) =>
+    mode === "korean" ? formatKorean(amount ?? null) : formatCurrency(amount ?? null);
 
   const scrollYears = (dir: "left" | "right") => {
     yearScrollRef.current?.scrollBy({ left: dir === "left" ? -200 : 200, behavior: "smooth" });
+  };
+
+  const personLabel = (person: string) => {
+    if (person === "changyoung") return member1;
+    if (person === "yeonju") return member2;
+    return person;
   };
 
   return (
@@ -141,9 +168,11 @@ export default function AssetsPage() {
       <Tabs defaultValue={PERSONS[0]}>
         <TabsList>
           {PERSONS.map((p) => (
-            <TabsTrigger key={p} value={p}>{PERSON_LABELS[p]}</TabsTrigger>
+            <TabsTrigger key={p} value={p}>{personLabel(p)}</TabsTrigger>
           ))}
+          <TabsTrigger value="all">전체</TabsTrigger>
         </TabsList>
+
         {PERSONS.map((person) => (
           <TabsContent key={person} value={person} className="mt-4">
             {loading ? (
@@ -152,27 +181,92 @@ export default function AssetsPage() {
               </div>
             ) : (
               <BlurOverlay>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  {MONTHS.map((month) => {
+                    const r = getRecord(person, month);
+                    const mode = getMode(person, month);
+                    return (
+                      <Card
+                        key={month}
+                        className="cursor-pointer transition-colors hover:border-primary"
+                        onClick={() => handleCardClick(person, month)}
+                      >
+                        <CardHeader className="px-4 pb-2 pt-3">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="text-xs text-muted-foreground">
+                                {personLabel(person)}
+                              </div>
+                              <div className="text-sm font-semibold">{month}월</div>
+                            </div>
+                            {r ? (
+                              <button
+                                onClick={(e) => toggleMode(person, month, e)}
+                                className="flex items-center gap-0.5 rounded border border-border px-1.5 py-0.5 text-xs transition-colors hover:bg-muted"
+                              >
+                                <span className={mode === "number" ? "font-bold" : "text-muted-foreground"}>
+                                  123
+                                </span>
+                                <span className="text-muted-foreground mx-0.5">|</span>
+                                <span className={mode === "korean" ? "font-bold" : "text-muted-foreground"}>
+                                  한글
+                                </span>
+                              </button>
+                            ) : (
+                              <Plus className="h-3 w-3 text-muted-foreground mt-1" />
+                            )}
+                          </div>
+                        </CardHeader>
+                        <CardContent className="px-4 pb-3">
+                          {r ? (
+                            <div className="space-y-1">
+                              {CARD_FIELDS.map(({ key, label }) => (
+                                <div key={key} className="flex justify-between text-xs">
+                                  <span className="text-muted-foreground">{label}</span>
+                                  <span>{formatValue(r[key] as number | null, mode)}</span>
+                                </div>
+                              ))}
+                              <div className="mt-2 border-t border-border pt-2 flex justify-between text-xs font-bold">
+                                <span>합계</span>
+                                <span className="text-yellow-500">{formatValue(r.total, mode)}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="py-2 text-center text-xs text-muted-foreground">데이터 없음</p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </BlurOverlay>
+            )}
+          </TabsContent>
+        ))}
+
+        {/* 전체 탭 */}
+        <TabsContent value="all" className="mt-4">
+          {loading ? (
+            <div className="flex h-40 items-center justify-center text-muted-foreground">
+              로딩 중...
+            </div>
+          ) : (
+            <BlurOverlay>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {MONTHS.map((month) => {
-                  const r = getRecord(person, month);
-                  const mode = getMode(person, month);
+                  const r = getMergedRecord(month);
+                  const mode = getMode("all", month);
                   return (
-                    <Card
-                      key={month}
-                      className="cursor-pointer transition-colors hover:border-primary"
-                      onClick={() => handleCardClick(person, month)}
-                    >
+                    <Card key={month} className="transition-colors">
                       <CardHeader className="px-4 pb-2 pt-3">
                         <div className="flex items-start justify-between">
                           <div>
-                            <div className="text-xs text-muted-foreground">
-                              {PERSON_LABELS[person]}
-                            </div>
+                            <div className="text-xs text-muted-foreground">전체</div>
                             <div className="text-sm font-semibold">{month}월</div>
                           </div>
-                          {r ? (
+                          {r && (
                             <button
-                              onClick={(e) => toggleMode(person, month, e)}
+                              onClick={(e) => toggleMode("all", month, e)}
                               className="flex items-center gap-0.5 rounded border border-border px-1.5 py-0.5 text-xs transition-colors hover:bg-muted"
                             >
                               <span className={mode === "number" ? "font-bold" : "text-muted-foreground"}>
@@ -183,8 +277,6 @@ export default function AssetsPage() {
                                 한글
                               </span>
                             </button>
-                          ) : (
-                            <Plus className="h-3 w-3 text-muted-foreground mt-1" />
                           )}
                         </div>
                       </CardHeader>
@@ -194,7 +286,7 @@ export default function AssetsPage() {
                             {CARD_FIELDS.map(({ key, label }) => (
                               <div key={key} className="flex justify-between text-xs">
                                 <span className="text-muted-foreground">{label}</span>
-                                <span>{formatValue(r[key] as number | null, mode)}</span>
+                                <span>{formatValue(r[key as keyof AssetRecord] as number | null, mode)}</span>
                               </div>
                             ))}
                             <div className="mt-2 border-t border-border pt-2 flex justify-between text-xs font-bold">
@@ -210,10 +302,9 @@ export default function AssetsPage() {
                   );
                 })}
               </div>
-              </BlurOverlay>
-            )}
-          </TabsContent>
-        ))}
+            </BlurOverlay>
+          )}
+        </TabsContent>
       </Tabs>
 
       {/* Edit dialog */}
@@ -222,7 +313,7 @@ export default function AssetsPage() {
           <DialogHeader>
             <DialogTitle>
               {editTarget &&
-                `${selectedYear}년 ${editTarget.month}월 ${PERSON_LABELS[editTarget.person] ?? editTarget.person} 자산`}
+                `${selectedYear}년 ${editTarget.month}월 ${personLabel(editTarget.person)} 자산`}
             </DialogTitle>
           </DialogHeader>
           {editTarget && session?.user?.id && (

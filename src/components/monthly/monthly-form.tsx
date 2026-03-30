@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useMembers } from "@/contexts/members-context";
 import type { MonthlyRecord } from "@/types";
 
 const schema = z.object({
@@ -44,6 +45,7 @@ interface MonthlyFormProps {
 
 export function MonthlyForm({ year, month, existing, onSaved, onClose }: MonthlyFormProps) {
   const { toast } = useToast();
+  const { member1, member2 } = useMembers();
   const [saving, setSaving] = useState(false);
 
   const { register, handleSubmit, reset, watch } = useForm<FormValues>({
@@ -140,11 +142,11 @@ export function MonthlyForm({ year, month, existing, onSaved, onClose }: Monthly
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>찬영 수입 (원)</Label>
+              <Label>{member1} 수입 (원)</Label>
               <Input {...register("changyoung_income")} placeholder="0" type="number" min={0} />
             </div>
             <div className="space-y-2">
-              <Label>연주 수입 (원)</Label>
+              <Label>{member2} 수입 (원)</Label>
               <Input {...register("yeonju_income")} placeholder="0" type="number" min={0} />
             </div>
             <div className="space-y-2">
@@ -173,11 +175,11 @@ export function MonthlyForm({ year, month, existing, onSaved, onClose }: Monthly
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>찬영 지출 (원)</Label>
+              <Label>{member1} 지출 (원)</Label>
               <Input {...register("changyoung_expense")} placeholder="0" type="number" min={0} />
             </div>
             <div className="space-y-2">
-              <Label>연주 지출 (원)</Label>
+              <Label>{member2} 지출 (원)</Label>
               <Input {...register("yeonju_expense")} placeholder="0" type="number" min={0} />
             </div>
             <div className="space-y-2">
