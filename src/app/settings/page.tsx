@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { signOut } from "next-auth/react";
-import { Sun, Moon, Loader2, Download, Upload } from "lucide-react";
+import { Sun, Moon, Loader2, Download, Upload, Trash2 } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,6 +61,11 @@ export default function SettingsPage() {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportPassword, setExportPassword] = useState("");
   const [exporting, setExporting] = useState(false);
+
+  // Reset state
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetConfirmText, setResetConfirmText] = useState("");
+  const [resetting, setResetting] = useState(false);
 
   // Import state
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -242,6 +247,27 @@ export default function SettingsPage() {
     }
   };
 
+  // Reset handler
+  const handleReset = async () => {
+    setResetting(true);
+    try {
+      const res = await fetch("/api/reset", { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "초기화 실패");
+      setResetDialogOpen(false);
+      setResetConfirmText("");
+      toast({
+        title: "데이터 초기화 완료",
+        description: `월별 ${data.deleted.monthly}개, 자산 ${data.deleted.assets}개가 삭제되었습니다`,
+      });
+      router.refresh();
+    } catch (err) {
+      toast({ title: "초기화 실패", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setResetting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Header title="설정" description="앱 환경 설정을 관리하세요" />
@@ -368,6 +394,30 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Danger zone card */}
+      <Card className="border-destructive">
+        <CardHeader>
+          <CardTitle className="text-destructive">위험 구역</CardTitle>
+          <CardDescription>되돌릴 수 없는 작업입니다. 신중하게 진행하세요</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold">모든 데이터 초기화</p>
+              <p className="text-xs text-muted-foreground">모든 월별 및 자산 데이터를 영구 삭제합니다</p>
+            </div>
+            <Button
+              variant="destructive"
+              className="flex items-center gap-2"
+              onClick={() => { setResetConfirmText(""); setResetDialogOpen(true); }}
+            >
+              <Trash2 className="h-4 w-4" />
+              모든 데이터 초기화
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>계정</CardTitle>
@@ -454,6 +504,41 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Reset confirmation dialog */}
+      <Dialog open={resetDialogOpen} onOpenChange={(open) => { if (!resetting) { setResetDialogOpen(open); if (!open) setResetConfirmText(""); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>데이터 초기화</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            모든 월별 데이터와 자산 데이터가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+          </p>
+          <div className="space-y-1.5">
+            <Label htmlFor="resetConfirm">확인을 위해 <span className="font-mono font-bold">DELETE</span>를 입력하세요</Label>
+            <Input
+              id="resetConfirm"
+              value={resetConfirmText}
+              onChange={(e) => setResetConfirmText(e.target.value)}
+              placeholder="DELETE"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetDialogOpen(false)} disabled={resetting}>
+              취소
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleReset}
+              disabled={resetting || resetConfirmText !== "DELETE"}
+            >
+              {resetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              모두 삭제
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Export password dialog */}
       <Dialog open={exportDialogOpen} onOpenChange={(open) => { if (!exporting) { setExportDialogOpen(open); if (!open) setExportPassword(""); } }}>
