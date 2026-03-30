@@ -18,7 +18,8 @@ export function getSupabaseClient(): SupabaseClient {
 export { getSupabaseClient as supabase };
 
 export function createServerSupabaseClient(): SupabaseClient {
-  if (!_serviceClient) {
+  // 싱글톤 캐시 무효화: 환경변수가 있을 때만 캐시 사용
+  if (!_serviceClient || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     _serviceClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
