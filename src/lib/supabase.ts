@@ -2,7 +2,6 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 // Lazily created singletons to avoid throwing at build time when env vars are absent
 let _anonClient: SupabaseClient | undefined;
-let _serviceClient: SupabaseClient | undefined;
 
 export function getSupabaseClient(): SupabaseClient {
   if (!_anonClient) {
