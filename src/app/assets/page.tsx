@@ -42,7 +42,7 @@ export default function AssetsPage() {
   const [records, setRecords] = useState<AssetRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
-  const [numberModes, setNumberModes] = useState<Record<string, NumberMode>>({});
+  const [globalFormat, setGlobalFormat] = useState<NumberMode>("number");
   const yearScrollRef = useRef<HTMLDivElement>(null);
 
   const yearOptions = generateYearOptions();
@@ -102,20 +102,8 @@ export default function AssetsPage() {
     setEditTarget(null);
   };
 
-  const getMode = (person: string, month: number): NumberMode =>
-    numberModes[`${person}-${month}`] ?? "number";
-
-  const toggleMode = (person: string, month: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const key = `${person}-${month}`;
-    setNumberModes((prev) => ({
-      ...prev,
-      [key]: prev[key] === "korean" ? "number" : "korean",
-    }));
-  };
-
-  const formatValue = (amount: number | null | undefined, mode: NumberMode) =>
-    mode === "korean" ? formatKorean(amount ?? null) : formatCurrency(amount ?? null);
+  const formatValue = (amount: number | null | undefined) =>
+    globalFormat === "korean" ? formatKorean(amount ?? null) : formatCurrency(amount ?? null);
 
   const scrollYears = (dir: "left" | "right") => {
     yearScrollRef.current?.scrollBy({ left: dir === "left" ? -200 : 200, behavior: "smooth" });
@@ -134,14 +122,14 @@ export default function AssetsPage() {
         description="월별 자산 스냅샷을 기록하고 성장 추이를 확인하세요"
       />
 
-      {/* Year scroll */}
+      {/* Year scroll + global format toggle */}
       <div className="flex items-center gap-2">
         <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => scrollYears("left")}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <div
           ref={yearScrollRef}
-          className="flex gap-1 overflow-x-auto scrollbar-hide"
+          className="flex flex-1 gap-1 overflow-x-auto scrollbar-hide"
           style={{ scrollbarWidth: "none" }}
         >
           {yearOptions.map((y) => (
@@ -162,6 +150,15 @@ export default function AssetsPage() {
         <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => scrollYears("right")}>
           <ChevronRight className="h-4 w-4" />
         </Button>
+        {/* Global format toggle */}
+        <button
+          onClick={() => setGlobalFormat((f) => f === "korean" ? "number" : "korean")}
+          className="flex shrink-0 items-center gap-0.5 rounded border border-border px-2 py-1.5 text-xs transition-colors hover:bg-muted"
+        >
+          <span className={globalFormat === "number" ? "font-bold" : "text-muted-foreground"}>123</span>
+          <span className="mx-0.5 text-muted-foreground">|</span>
+          <span className={globalFormat === "korean" ? "font-bold" : "text-muted-foreground"}>한글</span>
+        </button>
       </div>
 
       {/* Person tabs */}
@@ -184,7 +181,6 @@ export default function AssetsPage() {
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                   {MONTHS.map((month) => {
                     const r = getRecord(person, month);
-                    const mode = getMode(person, month);
                     return (
                       <Card
                         key={month}
@@ -199,22 +195,7 @@ export default function AssetsPage() {
                               </div>
                               <div className="text-sm font-semibold">{month}월</div>
                             </div>
-                            {r ? (
-                              <button
-                                onClick={(e) => toggleMode(person, month, e)}
-                                className="flex items-center gap-0.5 rounded border border-border px-1.5 py-0.5 text-xs transition-colors hover:bg-muted"
-                              >
-                                <span className={mode === "number" ? "font-bold" : "text-muted-foreground"}>
-                                  123
-                                </span>
-                                <span className="text-muted-foreground mx-0.5">|</span>
-                                <span className={mode === "korean" ? "font-bold" : "text-muted-foreground"}>
-                                  한글
-                                </span>
-                              </button>
-                            ) : (
-                              <Plus className="h-3 w-3 text-muted-foreground mt-1" />
-                            )}
+                            {!r && <Plus className="h-3 w-3 text-muted-foreground mt-1" />}
                           </div>
                         </CardHeader>
                         <CardContent className="px-4 pb-3">
@@ -223,12 +204,12 @@ export default function AssetsPage() {
                               {CARD_FIELDS.map(({ key, label }) => (
                                 <div key={key} className="flex justify-between text-xs">
                                   <span className="text-muted-foreground">{label}</span>
-                                  <span>{formatValue(r[key] as number | null, mode)}</span>
+                                  <span>{formatValue(r[key] as number | null)}</span>
                                 </div>
                               ))}
                               <div className="mt-2 border-t border-border pt-2 flex justify-between text-xs font-bold">
                                 <span>합계</span>
-                                <span className="text-yellow-500">{formatValue(r.total, mode)}</span>
+                                <span className="text-yellow-500">{formatValue(r.total)}</span>
                               </div>
                             </div>
                           ) : (
@@ -255,7 +236,6 @@ export default function AssetsPage() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {MONTHS.map((month) => {
                   const r = getMergedRecord(month);
-                  const mode = getMode("all", month);
                   return (
                     <Card key={month} className="transition-colors">
                       <CardHeader className="px-4 pb-2 pt-3">
@@ -264,20 +244,6 @@ export default function AssetsPage() {
                             <div className="text-xs text-muted-foreground">전체</div>
                             <div className="text-sm font-semibold">{month}월</div>
                           </div>
-                          {r && (
-                            <button
-                              onClick={(e) => toggleMode("all", month, e)}
-                              className="flex items-center gap-0.5 rounded border border-border px-1.5 py-0.5 text-xs transition-colors hover:bg-muted"
-                            >
-                              <span className={mode === "number" ? "font-bold" : "text-muted-foreground"}>
-                                123
-                              </span>
-                              <span className="text-muted-foreground mx-0.5">|</span>
-                              <span className={mode === "korean" ? "font-bold" : "text-muted-foreground"}>
-                                한글
-                              </span>
-                            </button>
-                          )}
                         </div>
                       </CardHeader>
                       <CardContent className="px-4 pb-3">
@@ -286,12 +252,12 @@ export default function AssetsPage() {
                             {CARD_FIELDS.map(({ key, label }) => (
                               <div key={key} className="flex justify-between text-xs">
                                 <span className="text-muted-foreground">{label}</span>
-                                <span>{formatValue(r[key as keyof AssetRecord] as number | null, mode)}</span>
+                                <span>{formatValue(r[key as keyof AssetRecord] as number | null)}</span>
                               </div>
                             ))}
                             <div className="mt-2 border-t border-border pt-2 flex justify-between text-xs font-bold">
                               <span>합계</span>
-                              <span className="text-yellow-500">{formatValue(r.total, mode)}</span>
+                              <span className="text-yellow-500">{formatValue(r.total)}</span>
                             </div>
                           </div>
                         ) : (
