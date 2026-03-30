@@ -167,7 +167,7 @@ async function importAssets() {
     .map((row) => {
       const year = toInt(row["year"] ?? row["연도"] ?? row["Year"]);
       const month = toInt(row["month"] ?? row["월"] ?? row["Month"]);
-      const person = toStr(row["person"] ?? row["사람"] ?? row["Person"]);
+      const person = toStr(row["person"] ?? row["대상자"] ?? row["사람"] ?? row["Person"]);
       if (!year || !month || !person) return null;
 
       // Normalize person value to "changyoung" or "yeonju"
