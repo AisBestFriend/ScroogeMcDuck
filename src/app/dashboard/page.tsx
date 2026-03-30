@@ -63,10 +63,12 @@ function DeltaBadge({
   current,
   prev,
   label,
+  isExpense = false,
 }: {
   current: number;
   prev: number;
   label: string;
+  isExpense?: boolean;
 }) {
   if (prev === 0) {
     return <p className="text-xs text-muted-foreground mt-1">{label} 데이터 없음</p>;
@@ -74,8 +76,12 @@ function DeltaBadge({
   const diff = current - prev;
   const pct = (diff / prev) * 100;
   const isUp = diff >= 0;
+  // 수입/저축: 오름=빨강, 내림=파랑 (한국 주식 스타일)
+  // 지출: 오름=파랑(나쁨), 내림=빨강(좋음) — 반전
+  const upColor = isExpense ? "text-blue-500" : "text-red-500";
+  const downColor = isExpense ? "text-red-500" : "text-blue-500";
   return (
-    <p className={cn("text-xs mt-1", isUp ? "text-green-500" : "text-red-500")}>
+    <p className={cn("text-xs mt-1", isUp ? upColor : downColor)}>
       {isUp ? "▲" : "▼"} {formatCurrency(Math.abs(diff))} ({isUp ? "+" : ""}
       {pct.toFixed(1)}%) {label} 대비
     </p>
@@ -167,6 +173,7 @@ export default function DashboardPage() {
       title: "지출",
       icon: TrendingDown,
       iconClass: "text-red-500",
+      isExpense: true,
       current:
         viewMode === "monthly"
           ? (selectedRecord?.total_expense ?? 0)
@@ -285,7 +292,7 @@ export default function DashboardPage() {
           {/* Summary Cards */}
           <BlurOverlay>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {cardDefs.map(({ title, icon: Icon, iconClass, current, prev }) => (
+              {cardDefs.map(({ title, icon: Icon, iconClass, current, prev, isExpense }) => (
                 <Card key={title}>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -295,7 +302,7 @@ export default function DashboardPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-2xl font-bold">{formatCurrency(current)}</p>
-                    <DeltaBadge current={current} prev={prev} label={comparisonLabel} />
+                    <DeltaBadge current={current} prev={prev} label={comparisonLabel} isExpense={isExpense} />
                   </CardContent>
                 </Card>
               ))}
