@@ -49,9 +49,10 @@ interface AssetFormProps {
   person: string;
   existing: AssetRecord | null;
   onSaved: (record: AssetRecord) => void;
+  onClose: () => void;
 }
 
-export function AssetForm({ year, month, person, existing, onSaved }: AssetFormProps) {
+export function AssetForm({ year, month, person, existing, onSaved, onClose }: AssetFormProps) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
 
@@ -141,6 +142,9 @@ export function AssetForm({ year, month, person, existing, onSaved }: AssetFormP
       <Button type="submit" className="w-full" disabled={saving}>
         {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         저장
+      </Button>
+      <Button type="button" variant="outline" className="w-full" onClick={onClose}>
+        닫기
       </Button>
     </form>
   );

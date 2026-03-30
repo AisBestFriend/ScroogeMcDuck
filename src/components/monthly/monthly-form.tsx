@@ -39,9 +39,10 @@ interface MonthlyFormProps {
   month: number;
   existing: MonthlyRecord | null;
   onSaved: (record: MonthlyRecord) => void;
+  onClose: () => void;
 }
 
-export function MonthlyForm({ year, month, existing, onSaved }: MonthlyFormProps) {
+export function MonthlyForm({ year, month, existing, onSaved, onClose }: MonthlyFormProps) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
 
@@ -228,6 +229,9 @@ export function MonthlyForm({ year, month, existing, onSaved }: MonthlyFormProps
       <Button type="submit" className="w-full" disabled={saving}>
         {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         저장
+      </Button>
+      <Button type="button" variant="outline" className="w-full" onClick={onClose}>
+        닫기
       </Button>
     </form>
   );

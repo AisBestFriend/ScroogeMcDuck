@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const EVENTS = [
   "mousemove",
@@ -11,9 +11,10 @@ const EVENTS = [
   "touchmove",
 ] as const;
 
-export function useBlurOnIdle(timeoutMs: number): boolean {
+export function useBlurOnIdle(timeoutMs: number): [boolean, () => void] {
   const [isBlurred, setIsBlurred] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resetRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     if (timeoutMs === 0) {
@@ -27,6 +28,7 @@ export function useBlurOnIdle(timeoutMs: number): boolean {
       timerRef.current = setTimeout(() => setIsBlurred(true), timeoutMs);
     };
 
+    resetRef.current = reset;
     reset();
 
     EVENTS.forEach((e) => window.addEventListener(e, reset, { passive: true }));
@@ -36,5 +38,7 @@ export function useBlurOnIdle(timeoutMs: number): boolean {
     };
   }, [timeoutMs]);
 
-  return isBlurred;
+  const manualReset = useCallback(() => resetRef.current(), []);
+
+  return [isBlurred, manualReset];
 }

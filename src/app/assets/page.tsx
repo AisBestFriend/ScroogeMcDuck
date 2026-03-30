@@ -227,12 +227,12 @@ export default function AssetsPage() {
           </DialogHeader>
           {editTarget && session?.user?.id && (
             <AssetForm
-              
               year={selectedYear}
               month={editTarget.month}
               person={editTarget.person}
               existing={editTarget.record}
               onSaved={handleSaved}
+              onClose={() => setEditTarget(null)}
             />
           )}
         </DialogContent>

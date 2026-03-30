@@ -8,6 +8,7 @@ const DEFAULT_TIMEOUT = 3 * 60 * 1000;
 
 interface BlurContextValue {
   isBlurred: boolean;
+  resetBlur: () => void;
   blurTimeout: number;
   setBlurTimeout: (ms: number) => void;
 }
@@ -26,7 +27,7 @@ export function BlurProvider({ children }: { children: React.ReactNode }) {
     setHydrated(true);
   }, []);
 
-  const isBlurred = useBlurOnIdle(hydrated ? blurTimeout : 0);
+  const [isBlurred, resetBlur] = useBlurOnIdle(hydrated ? blurTimeout : 0);
 
   const setBlurTimeout = (ms: number) => {
     setBlurTimeoutState(ms);
@@ -34,7 +35,7 @@ export function BlurProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <BlurContext.Provider value={{ isBlurred, blurTimeout, setBlurTimeout }}>
+    <BlurContext.Provider value={{ isBlurred, resetBlur, blurTimeout, setBlurTimeout }}>
       {children}
     </BlurContext.Provider>
   );
