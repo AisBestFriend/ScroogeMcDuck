@@ -18,13 +18,11 @@ export function getSupabaseClient(): SupabaseClient {
 export { getSupabaseClient as supabase };
 
 export function createServerSupabaseClient(): SupabaseClient {
-  // 싱글톤 캐시 무효화: 환경변수가 있을 때만 캐시 사용
-  if (!_serviceClient || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    _serviceClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
+  // 매 호출마다 새 클라이언트 생성 (서버리스 환경에서 싱글톤 캐시 금지)
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    throw new Error(`Supabase 환경변수 누락: URL=${!!url}, KEY=${!!key}`);
   }
-  return _serviceClient;
+  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
