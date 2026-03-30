@@ -6,7 +6,6 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { upsertAssetRecord } from "@/lib/queries";
 import type { AssetRecord } from "@/types";
@@ -40,9 +39,9 @@ const FIELDS: { key: keyof AssetFormValues; label: string }[] = [
   { key: "savings_deposit", label: "예적금" },
   { key: "bonds", label: "채권" },
   { key: "crypto_gold", label: "코인/금" },
-  { key: "house_deposit", label: "전세 보증금" },
-  { key: "pension", label: "연금" },
-  { key: "apt_payment", label: "아파트 납입금" },
+  { key: "house_deposit", label: "집보증금" },
+  { key: "pension", label: "연금저축" },
+  { key: "apt_payment", label: "분양대금" },
 ];
 
 interface AssetFormProps {
@@ -114,33 +113,24 @@ export function AssetForm({ userId, year, month, person, existing, onSaved }: As
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            {PERSON_LABELS[person] ?? person} 자산 스냅샷
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>스냅샷 날짜</Label>
-            <Input {...register("snapshot_date")} type="date" />
+      <div className="space-y-2">
+        <Label>스냅샷 날짜</Label>
+        <Input {...register("snapshot_date")} type="date" />
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {FIELDS.map(({ key, label }) => (
+          <div key={key} className="space-y-2">
+            <Label>{label} (원)</Label>
+            <Input {...register(key)} placeholder="0" type="number" min={0} />
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {FIELDS.map(({ key, label }) => (
-              <div key={key} className="space-y-2">
-                <Label>{label} (원)</Label>
-                <Input {...register(key)} placeholder="0" type="number" min={0} />
-              </div>
-            ))}
-          </div>
-          <div className="flex items-center justify-between rounded-md border border-border bg-muted px-4 py-3">
-            <span className="text-sm font-medium text-muted-foreground">총 자산</span>
-            <span className="text-lg font-bold text-yellow-500">
-              ₩{total.toLocaleString("ko-KR")}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+        ))}
+      </div>
+      <div className="flex items-center justify-between rounded-md border border-border bg-muted px-4 py-3">
+        <span className="text-sm font-medium text-muted-foreground">총 자산</span>
+        <span className="text-lg font-bold text-yellow-500">
+          ₩{total.toLocaleString("ko-KR")}
+        </span>
+      </div>
       <Button type="submit" className="w-full" disabled={saving}>
         {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         저장

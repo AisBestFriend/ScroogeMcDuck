@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { LayoutDashboard, Calendar, PieChart, LogOut, Coins } from "lucide-react";
+import { LayoutDashboard, Calendar, PieChart, Settings, LogOut, Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -12,6 +12,7 @@ const navItems = [
   { href: "/dashboard", label: "대시보드", icon: LayoutDashboard },
   { href: "/monthly", label: "월별 가계부", icon: Calendar },
   { href: "/assets", label: "자산 현황", icon: PieChart },
+  { href: "/settings", label: "설정", icon: Settings },
 ];
 
 export function Sidebar() {

@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Calendar, PieChart } from "lucide-react";
+import { LayoutDashboard, Calendar, PieChart, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "대시보드", icon: LayoutDashboard },
   { href: "/monthly", label: "월별", icon: Calendar },
   { href: "/assets", label: "자산", icon: PieChart },
+  { href: "/settings", label: "설정", icon: Settings },
 ];
 
 export function MobileNav() {
