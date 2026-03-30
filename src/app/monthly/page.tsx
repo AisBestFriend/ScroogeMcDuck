@@ -171,7 +171,7 @@ export default function MonthlyPage() {
           </DialogHeader>
           {session?.user?.id && (
             <MonthlyForm
-              userId={session.user.id}
+              
               year={editYear}
               month={editMonth}
               existing={getRecord(editYear, editMonth)}

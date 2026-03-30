@@ -35,14 +35,13 @@ function parseAmount(v?: string): number | null {
 }
 
 interface MonthlyFormProps {
-  userId: string;
   year: number;
   month: number;
   existing: MonthlyRecord | null;
   onSaved: (record: MonthlyRecord) => void;
 }
 
-export function MonthlyForm({ userId, year, month, existing, onSaved }: MonthlyFormProps) {
+export function MonthlyForm({ year, month, existing, onSaved }: MonthlyFormProps) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
 

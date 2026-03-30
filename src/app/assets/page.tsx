@@ -224,7 +224,7 @@ export default function AssetsPage() {
           </DialogHeader>
           {editTarget && session?.user?.id && (
             <AssetForm
-              userId={session.user.id}
+              
               year={selectedYear}
               month={editTarget.month}
               person={editTarget.person}

@@ -44,7 +44,6 @@ const FIELDS: { key: keyof AssetFormValues; label: string }[] = [
 ];
 
 interface AssetFormProps {
-  userId: string;
   year: number;
   month: number;
   person: string;
@@ -52,7 +51,7 @@ interface AssetFormProps {
   onSaved: (record: AssetRecord) => void;
 }
 
-export function AssetForm({ userId, year, month, person, existing, onSaved }: AssetFormProps) {
+export function AssetForm({ year, month, person, existing, onSaved }: AssetFormProps) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
 
