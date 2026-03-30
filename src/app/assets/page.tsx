@@ -81,7 +81,10 @@ export default function AssetsPage() {
       pension: sum(r1?.pension, r2?.pension),
       house_deposit: sum(r1?.house_deposit, r2?.house_deposit),
       apt_payment: sum(r1?.apt_payment, r2?.apt_payment),
-      total: sum(r1?.total, r2?.total),
+      total: sum(
+        (r1 ? (r1.cash ?? 0) + (r1.investment ?? 0) + (r1.savings_deposit ?? 0) + (r1.pension ?? 0) + (r1.house_deposit ?? 0) + (r1.apt_payment ?? 0) : null),
+        (r2 ? (r2.cash ?? 0) + (r2.investment ?? 0) + (r2.savings_deposit ?? 0) + (r2.pension ?? 0) + (r2.house_deposit ?? 0) + (r2.apt_payment ?? 0) : null)
+      ),
     };
   };
 
@@ -209,7 +212,9 @@ export default function AssetsPage() {
                               ))}
                               <div className="mt-2 border-t border-border pt-2 flex justify-between text-xs font-bold">
                                 <span>합계</span>
-                                <span className="text-yellow-500">{formatValue(r.total)}</span>
+                                <span className="text-yellow-500">{formatValue(
+                                  (r.cash ?? 0) + (r.investment ?? 0) + (r.savings_deposit ?? 0) + (r.pension ?? 0) + (r.house_deposit ?? 0) + (r.apt_payment ?? 0) || null
+                                )}</span>
                               </div>
                             </div>
                           ) : (
@@ -257,7 +262,9 @@ export default function AssetsPage() {
                             ))}
                             <div className="mt-2 border-t border-border pt-2 flex justify-between text-xs font-bold">
                               <span>합계</span>
-                              <span className="text-yellow-500">{formatValue(r.total)}</span>
+                              <span className="text-yellow-500">{formatValue(
+                                  (r.cash ?? 0) + (r.investment ?? 0) + (r.savings_deposit ?? 0) + (r.pension ?? 0) + (r.house_deposit ?? 0) + (r.apt_payment ?? 0) || null
+                                )}</span>
                             </div>
                           </div>
                         ) : (
