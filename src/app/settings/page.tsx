@@ -115,14 +115,16 @@ export default function SettingsPage() {
   const handleGoogleLink = async () => {
     setLinkingGoogle(true);
     try {
-      const supabase = getSupabaseClient();
-      const { error } = await supabase.auth.linkIdentity({ provider: "google" });
-      if (error) {
-        toast({ title: "연동 실패", description: error.message, variant: "destructive" });
+      const res = await fetch("/api/user/link-google");
+      const data = await res.json();
+      if (data.url) {
+        // Supabase Google OAuth 페이지로 이동
+        window.location.href = data.url;
       } else {
-        setGoogleLinked(true);
-        toast({ title: "Google 계정 연동 완료" });
+        toast({ title: "연동 실패", description: data.error || "알 수 없는 오류", variant: "destructive" });
       }
+    } catch {
+      toast({ title: "연동 실패", description: "서버 오류", variant: "destructive" });
     } finally {
       setLinkingGoogle(false);
     }
