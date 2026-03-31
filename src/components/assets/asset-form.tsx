@@ -94,6 +94,8 @@ export function AssetForm({ year, month, person, existing, prevRecord, onSaved, 
     if (checked && prevRecord) {
       const prevVal = prevRecord[key as keyof AssetRecord];
       setValue(key, prevVal != null ? String(prevVal) : "");
+    } else if (!checked) {
+      setValue(key, "");
     }
   };
 
