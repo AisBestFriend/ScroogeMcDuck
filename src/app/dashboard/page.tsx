@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Header } from "@/components/layout/header";
 import {
   ComposedChart,
+  LineChart,
   Bar,
   Line,
   XAxis,
@@ -18,11 +19,17 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { cn, formatCurrency, generateYearOptions, getCurrentYearMonth } from "@/lib/utils";
+import { cn, formatCurrency, formatKorean, generateYearOptions, getCurrentYearMonth } from "@/lib/utils";
 import { BlurOverlay } from "@/components/blur-overlay";
 import type { MonthlyRecord } from "@/types";
 
 type ViewMode = "monthly" | "yearly";
+
+interface AssetTimeline {
+  year: number;
+  month: number;
+  total: number;
+}
 
 interface YearlySummary {
   year: number;
@@ -97,6 +104,7 @@ export default function DashboardPage() {
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [monthlyData, setMonthlyData] = useState<MonthlyRecord[]>([]);
   const [yearlyData, setYearlyData] = useState<YearlySummary[]>([]);
+  const [assetTimeline, setAssetTimeline] = useState<AssetTimeline[]>([]);
   const [loading, setLoading] = useState(true);
 
   const yearOptions = generateYearOptions();
@@ -105,15 +113,29 @@ export default function DashboardPage() {
     if (!session?.user?.id) return;
     setLoading(true);
     try {
+      const promises: Promise<void>[] = [];
+
       if (viewMode === "monthly") {
-        const res = await fetch(`/api/monthly?year=${selectedYear}`);
-        const data = await res.json();
-        setMonthlyData(data);
+        promises.push(
+          fetch(`/api/monthly?year=${selectedYear}`)
+            .then((r) => r.json())
+            .then(setMonthlyData)
+        );
       } else {
-        const res = await fetch("/api/monthly?mode=yearly");
-        const data: YearlySummary[] = await res.json();
-        setYearlyData(data);
+        promises.push(
+          fetch("/api/monthly?mode=yearly")
+            .then((r) => r.json())
+            .then((data: YearlySummary[]) => setYearlyData(data))
+        );
       }
+
+      promises.push(
+        fetch("/api/assets?mode=timeline")
+          .then((r) => r.json())
+          .then((data: AssetTimeline[]) => setAssetTimeline(data))
+      );
+
+      await Promise.all(promises);
     } finally {
       setLoading(false);
     }
@@ -353,6 +375,69 @@ export default function DashboardPage() {
                     />
                   </ComposedChart>
                 </ResponsiveContainer>
+              ) : (
+                <div className="flex h-[320px] items-center justify-center text-muted-foreground">
+                  데이터가 없습니다
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Asset Timeline Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>전체 자산 추이</CardTitle>
+              <CardDescription>찬영 + 연주 순자산 합산 (배당금/실현손익 제외)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {assetTimeline.length > 0 ? (
+                <BlurOverlay>
+                  <ResponsiveContainer width="100%" height={320}>
+                    <LineChart
+                      data={assetTimeline.map((d) => ({
+                        name: `${d.year}.${String(d.month).padStart(2, "0")}`,
+                        total: d.total,
+                      }))}
+                      margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                      />
+                      <YAxis
+                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                        tickFormatter={(v) => {
+                          if (v >= 100_000_000) return `${(v / 100_000_000).toFixed(1)}억`;
+                          if (v >= 10_000) return `${(v / 10_000).toFixed(0)}만`;
+                          return `${v}`;
+                        }}
+                        width={55}
+                      />
+                      <Tooltip
+                        content={({ active, payload, label }) => {
+                          if (!active || !payload?.length) return null;
+                          return (
+                            <div className="rounded-lg border border-border bg-card p-3 shadow-lg text-sm">
+                              <p className="font-semibold mb-1">{label}</p>
+                              <p className="text-[#3b82f6]">
+                                총자산: {formatKorean(payload[0]?.value as number)}
+                              </p>
+                            </div>
+                          );
+                        }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="total"
+                        stroke="#3b82f6"
+                        strokeWidth={2}
+                        dot={{ r: 4, fill: "#3b82f6" }}
+                        activeDot={{ r: 6 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </BlurOverlay>
               ) : (
                 <div className="flex h-[320px] items-center justify-center text-muted-foreground">
                   데이터가 없습니다

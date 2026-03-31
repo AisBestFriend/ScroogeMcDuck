@@ -10,10 +10,38 @@ export async function GET(request: NextRequest) {
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
+  const mode = searchParams.get("mode");
   const year = searchParams.get("year") ? Number(searchParams.get("year")) : undefined;
   const person = searchParams.get("person") ?? undefined;
 
   try {
+    if (mode === "timeline") {
+      const records = await getAssetRecords(session.user.id);
+      // Group by year+month, sum net assets (exclude dividend and realized_profit)
+      const map = new Map<string, { year: number; month: number; total: number }>();
+      for (const r of records) {
+        const key = `${r.year}-${String(r.month).padStart(2, "0")}`;
+        const net =
+          (r.cash ?? 0) +
+          (r.investment ?? 0) +
+          (r.savings_deposit ?? 0) +
+          (r.pension ?? 0) +
+          (r.house_deposit ?? 0) +
+          (r.apt_payment ?? 0) +
+          (r.bonds ?? 0) +
+          (r.crypto_gold ?? 0);
+        if (map.has(key)) {
+          map.get(key)!.total += net;
+        } else {
+          map.set(key, { year: r.year, month: r.month, total: net });
+        }
+      }
+      const timeline = Array.from(map.values()).sort(
+        (a, b) => a.year * 100 + a.month - (b.year * 100 + b.month)
+      );
+      return NextResponse.json(timeline);
+    }
+
     const records = await getAssetRecords(session.user.id, year, person);
     return NextResponse.json(records);
   } catch (error) {
