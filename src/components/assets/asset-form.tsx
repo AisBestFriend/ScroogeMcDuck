@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import type { AssetRecord } from "@/types";
 import { useMembers } from "@/contexts/members-context";
+import { cn } from "@/lib/utils";
 
 interface AssetFormValues {
   snapshot_date: string;
@@ -48,14 +49,16 @@ interface AssetFormProps {
   month: number;
   person: string;
   existing: AssetRecord | null;
+  prevRecord?: AssetRecord | null;  // 전월 데이터
   onSaved: (record: AssetRecord) => void;
   onClose: () => void;
 }
 
-export function AssetForm({ year, month, person, existing, onSaved, onClose }: AssetFormProps) {
+export function AssetForm({ year, month, person, existing, prevRecord, onSaved, onClose }: AssetFormProps) {
   const { toast } = useToast();
   const { member1, member2 } = useMembers();
   const [saving, setSaving] = useState(false);
+  const [sameAsPrev, setSameAsPrev] = useState<Record<string, boolean>>({});
 
   const personLabel = (p: string) => {
     if (p === "changyoung") return member1;
@@ -77,13 +80,22 @@ export function AssetForm({ year, month, person, existing, onSaved, onClose }: A
     apt_payment: r?.apt_payment?.toString() ?? "",
   });
 
-  const { register, handleSubmit, reset, watch } = useForm<AssetFormValues>({
+  const { register, handleSubmit, reset, watch, setValue } = useForm<AssetFormValues>({
     defaultValues: toDefaults(existing),
   });
 
   useEffect(() => {
     reset(toDefaults(existing));
+    setSameAsPrev({});
   }, [existing, reset]);
+
+  const handleSameAsPrev = (key: keyof AssetFormValues, checked: boolean) => {
+    setSameAsPrev(prev => ({ ...prev, [key]: checked }));
+    if (checked && prevRecord) {
+      const prevVal = prevRecord[key as keyof AssetRecord];
+      setValue(key, prevVal != null ? String(prevVal) : "");
+    }
+  };
 
   const values = watch();
   const total = FIELDS.reduce((sum, { key }) => sum + (parseAmount(values[key]) ?? 0), 0);
@@ -133,12 +145,35 @@ export function AssetForm({ year, month, person, existing, onSaved, onClose }: A
         <Input {...register("snapshot_date")} type="date" />
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {FIELDS.map(({ key, label }) => (
-          <div key={key} className="space-y-2">
-            <Label>{label} (원)</Label>
-            <Input {...register(key)} placeholder="0" type="number" min={0} />
-          </div>
-        ))}
+        {FIELDS.map(({ key, label }) => {
+          const hasPrev = prevRecord != null && prevRecord[key as keyof AssetRecord] != null;
+          const isChecked = sameAsPrev[key] ?? false;
+          return (
+            <div key={key} className="space-y-1">
+              <div className="flex items-center justify-between">
+                <Label>{label} (원)</Label>
+                {hasPrev && (
+                  <label className="flex items-center gap-1 cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={e => handleSameAsPrev(key, e.target.checked)}
+                      className="h-3 w-3 accent-primary"
+                    />
+                    전월 동일
+                  </label>
+                )}
+              </div>
+              <Input
+                {...register(key)}
+                placeholder="0"
+                type="number"
+                min={0}
+                className={cn(isChecked && "border-primary/50 bg-primary/5")}
+              />
+            </div>
+          );
+        })}
       </div>
       <div className="flex items-center justify-between rounded-md border border-border bg-muted px-4 py-3">
         <span className="text-sm font-medium text-muted-foreground">총 자산</span>

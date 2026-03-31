@@ -295,6 +295,7 @@ export default function AssetsPage() {
               month={editTarget.month}
               person={editTarget.person}
               existing={editTarget.record}
+              prevRecord={getRecord(editTarget.person, editTarget.month - 1) ?? null}
               onSaved={handleSaved}
               onClose={() => setEditTarget(null)}
             />
