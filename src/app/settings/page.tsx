@@ -15,7 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { getSupabaseClient } from "@/lib/supabase";
 import { useBlurContext } from "@/contexts/blur-context";
 import { useMembers } from "@/contexts/members-context";
-import { encryptData, decryptData } from "@/lib/crypto";
+import { encryptData } from "@/lib/crypto";
+import { ImportWizard } from "@/components/settings/import-wizard";
 
 const BLUR_OPTIONS = [
   { label: "끄기", value: 0 },
@@ -24,15 +25,6 @@ const BLUR_OPTIONS = [
   { label: "5분", value: 300_000 },
   { label: "10분", value: 600_000 },
 ];
-
-type ImportMode = "merge" | "overwrite";
-
-interface BackupPayload {
-  version: string;
-  exportedAt: string;
-  monthly: unknown[];
-  assets: unknown[];
-}
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -69,14 +61,8 @@ export default function SettingsPage() {
 
   // Import state
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [importPassword, setImportPassword] = useState("");
   const [importFile, setImportFile] = useState<File | null>(null);
-  const [decrypting, setDecrypting] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewData, setPreviewData] = useState<BackupPayload | null>(null);
-  const [importMode, setImportMode] = useState<ImportMode>("merge");
-  const [importing, setImporting] = useState(false);
+  const [importWizardOpen, setImportWizardOpen] = useState(false);
 
   useEffect(() => {
     setEditMember1(member1);
@@ -182,69 +168,13 @@ export default function SettingsPage() {
     }
   };
 
-  // Import: file selected → open password dialog
+  // Import: file selected → open wizard
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setImportFile(file);
-    setImportPassword("");
-    setImportDialogOpen(true);
+    setImportWizardOpen(true);
     e.target.value = "";
-  };
-
-  // Import: decrypt and show preview
-  const handleDecrypt = async () => {
-    if (!importFile || !importPassword) {
-      toast({ title: "오류", description: "비밀번호를 입력하세요", variant: "destructive" });
-      return;
-    }
-    setDecrypting(true);
-    try {
-      const text = await importFile.text();
-      const { encrypted, iv, salt } = JSON.parse(text);
-      const decrypted = await decryptData(encrypted, iv, salt, importPassword);
-      const data = JSON.parse(decrypted) as BackupPayload;
-      setPreviewData(data);
-      setImportDialogOpen(false);
-      setImportPassword("");
-      setPreviewOpen(true);
-    } catch {
-      toast({ title: "복호화 실패", description: "비밀번호가 올바르지 않거나 파일이 손상되었습니다", variant: "destructive" });
-    } finally {
-      setDecrypting(false);
-    }
-  };
-
-  // Import: execute
-  const handleImport = async () => {
-    if (!previewData) return;
-    setImporting(true);
-    try {
-      const res = await fetch("/api/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          monthly: previewData.monthly,
-          assets: previewData.assets,
-          mode: importMode,
-        }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "가져오기 실패");
-      }
-      setPreviewOpen(false);
-      setPreviewData(null);
-      setImportFile(null);
-      toast({
-        title: "가져오기 완료",
-        description: `월별 ${previewData.monthly.length}개, 자산 ${previewData.assets.length}개 처리되었습니다`,
-      });
-    } catch (err) {
-      toast({ title: "가져오기 실패", description: (err as Error).message, variant: "destructive" });
-    } finally {
-      setImporting(false);
-    }
   };
 
   // Reset handler
@@ -573,105 +503,11 @@ export default function SettingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Import password dialog */}
-      <Dialog open={importDialogOpen} onOpenChange={(open) => { if (!decrypting) { setImportDialogOpen(open); if (!open) { setImportPassword(""); setImportFile(null); } } }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>데이터 가져오기</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            {importFile?.name && <span className="font-medium">{importFile.name}</span>}
-            {" "}복호화에 사용된 비밀번호를 입력하세요.
-          </p>
-          <div className="space-y-1.5">
-            <Label htmlFor="importPassword">비밀번호</Label>
-            <Input
-              id="importPassword"
-              type="password"
-              value={importPassword}
-              onChange={(e) => setImportPassword(e.target.value)}
-              placeholder="백업 비밀번호"
-              onKeyDown={(e) => e.key === "Enter" && handleDecrypt()}
-              autoFocus
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setImportDialogOpen(false)} disabled={decrypting}>
-              취소
-            </Button>
-            <Button onClick={handleDecrypt} disabled={decrypting || !importPassword}>
-              {decrypting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              다음
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Import preview dialog */}
-      <Dialog open={previewOpen} onOpenChange={(open) => { if (!importing) { setPreviewOpen(open); if (!open) setPreviewData(null); } }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>가져오기 미리보기</DialogTitle>
-          </DialogHeader>
-          {previewData && (
-            <div className="space-y-4">
-              <div className="rounded-md border border-border p-3 space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">월별 기록</span>
-                  <span className="font-medium">{previewData.monthly.length}개</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">자산 기록</span>
-                  <span className="font-medium">{previewData.assets.length}개</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">백업 날짜</span>
-                  <span className="font-medium text-xs">{new Date(previewData.exportedAt).toLocaleDateString("ko-KR")}</span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium">가져오기 방식</p>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant={importMode === "merge" ? "default" : "outline"}
-                    onClick={() => setImportMode("merge")}
-                    className="flex-1"
-                  >
-                    병합
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={importMode === "overwrite" ? "default" : "outline"}
-                    onClick={() => setImportMode("overwrite")}
-                    className="flex-1"
-                  >
-                    덮어쓰기
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {importMode === "merge"
-                    ? "기존 데이터를 유지하고 없는 항목만 추가합니다."
-                    : "기존 데이터를 모두 삭제하고 백업 데이터로 교체합니다."}
-                </p>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPreviewOpen(false)} disabled={importing}>
-              취소
-            </Button>
-            <Button
-              onClick={handleImport}
-              disabled={importing}
-              variant={importMode === "overwrite" ? "destructive" : "default"}
-            >
-              {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              가져오기
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ImportWizard
+        open={importWizardOpen}
+        onClose={() => { setImportWizardOpen(false); setImportFile(null); }}
+        importFile={importFile}
+      />
     </div>
   );
 }
