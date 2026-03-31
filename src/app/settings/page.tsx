@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { getSupabaseClient } from "@/lib/supabase";
 import { useBlurContext } from "@/contexts/blur-context";
 import { useMembers } from "@/contexts/members-context";
 import { encryptData } from "@/lib/crypto";
